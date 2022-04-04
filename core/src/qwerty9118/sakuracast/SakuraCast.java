@@ -206,8 +206,8 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	private void populateBlossoms() {
 		
 		Random r = new Random();
-		int cellSize = 25;
-		int texSize = 48;
+		int cellSize = 12;
+		int texSize = (int) (48 * zoom);
 		int gridWidth = (int) (Gdx.graphics.getWidth() / cellSize);
 		int gridHeight = (int) (Gdx.graphics.getHeight() / cellSize);
 		Blossom blossom;
@@ -227,7 +227,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 				if(hitboxCheck((int) hmm.x, (int) hmm.y)) {
 					
 					blossom = new Blossom(this.blossomTex);
-					blossom.setBounds(xCoord, yCoord, texSize, texSize);
+					blossom.setBounds(hmm.x, hmm.y, texSize, texSize);
 					blossom.setBloomLevel(2+r.nextInt(2));
 					
 					this.blossoms.add(blossom);
@@ -493,6 +493,8 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 						camera.zoom = (regions.get(i).getHeight() + 20)/viewport.getWorldHeight();
 					}
 					
+					zoom = camera.zoom;
+					
 					break;
 					
 				}
@@ -513,6 +515,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			camera.position.x = viewport.getWorldWidth() / 2;
 			camera.position.y = viewport.getWorldHeight() / 2;
 			camera.zoom = 1;
+			zoom = camera.zoom;
 			
 			viewport.apply();
 			refreshScale();
