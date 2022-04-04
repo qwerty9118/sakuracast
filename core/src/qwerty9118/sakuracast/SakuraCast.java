@@ -42,6 +42,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 //	private ShapeRenderer shaperend;
 	private int DATE;
 	private float zoom;
+	private Vector3 zTextLoc;
 
 	@Override
 	public void create() {
@@ -61,6 +62,9 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		font = new BitmapFont();
 		font.setColor(Color.WHITE);
 		font.getData().setScale(2f);
+		
+		//set zoom level label location
+		zTextLoc = new Vector3(20, 20, 0);
 		
 		//set stored zoom level
 		zoom = 1f;
@@ -204,11 +208,12 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		Random r = new Random();
 		int cellSize = 25;
 		int texSize = 48;
-		int gridWidth = (int) (width / cellSize);
-		int gridHeight = (int) (height / cellSize);
+		int gridWidth = (int) (Gdx.graphics.getWidth() / cellSize);
+		int gridHeight = (int) (Gdx.graphics.getHeight() / cellSize);
 		Blossom blossom;
 		int xCoord;
 		int yCoord;
+		Vector3 hmm;
 		
 		for(int y = 0; y < gridHeight; y++) {
 			
@@ -217,7 +222,9 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 				xCoord = x*cellSize + r.nextInt(cellSize);
 				yCoord = y*cellSize + r.nextInt(cellSize);
 				
-				if(hitboxCheck(xCoord+(texSize/2), yCoord+(texSize/2))) {
+				hmm = guiPosOnWorld(xCoord+(texSize/2), yCoord+(texSize/2));
+				
+				if(hitboxCheck((int) hmm.x, (int) hmm.y)) {
 					
 					blossom = new Blossom(this.blossomTex);
 					blossom.setBounds(xCoord, yCoord, texSize, texSize);
@@ -307,6 +314,11 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		return viewport.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
 	}
 	
+	//translates a position on the window into the position where it appears that it is in the world.
+	private Vector3 guiPosOnWorld(int x, int y) {
+		return camera.unproject(new Vector3(x, y, 0));
+	}
+	
 	//refresh anything that needs to be after scaling the window.
 	private void refreshScale() {
 		
@@ -317,10 +329,16 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			
 		}
 		
-		this.blossoms= new ArrayList<Blossom>();
+		this.blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
-		font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
+		if(Gdx.graphics.getHeight() < Gdx.graphics.getWidth()) {
+			font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
+		}
+		else {
+			font.getData().setScale(viewport.getWorldWidth() / Gdx.graphics.getWidth());
+		}
+		zTextLoc = guiPosOnWorld(20, 20);
 		
 	}
 	
@@ -332,11 +350,11 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public void render() {
-		System.out.println(mousePosOnWorld().x + ", " + mousePosOnWorld().y);
-		Blossom blossom1 = new Blossom(this.blossomTex);
-		blossom1.setBounds(mousePosOnWorld().x, mousePosOnWorld().y, 20, 20);
-		blossom1.setBloomLevel(4);
-		this.blossoms.add(blossom1);
+//		System.out.println(mousePosOnWorld().x + ", " + mousePosOnWorld().y);
+//		Blossom blossom1 = new Blossom(this.blossomTex);
+//		blossom1.setBounds(mousePosOnWorld().x, mousePosOnWorld().y, 20, 20);
+//		blossom1.setBloomLevel(4);
+//		this.blossoms.add(blossom1);
 		
 		
 		//loop through all hitboxes and play a sound if a hitbox is hovered over
@@ -391,7 +409,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 		batch.draw(bgImage, 0, 0);
 		
-		font.draw(batch, "Zoom level:"+zoom, 100, height - 100);
+		font.draw(batch, "Zoom level:"+zoom, zTextLoc.x, zTextLoc.y);
 		
 		for (Region region : regions) {
 			region.draw(batch);
@@ -455,22 +473,54 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		
-		if(button == Input.Buttons.LEFT && hitboxCheck()) {
+		System.out.println(camera.zoom);
+		if(button == Input.Buttons.LEFT) {
 //			System.out.println(viewport.getWorldHeight());
 //			viewport.setWorldSize(viewport.getWorldWidth() -100, viewport.getWorldHeight() -100);
-			camera.zoom += 0.1;
-			refreshScale();
+//			camera.zoom += 0.5;
+			
+			for(int i = 0; i < regions.size(); i++) {
+				
+				if(hitboxCheck(i)) {
+					
+					camera.position.x = regions.get(i).getMidX();
+					camera.position.y = regions.get(i).getMidY();
+					
+					if( (regions.get(i).getWidth()/viewport.getWorldWidth()) > (regions.get(i).getHeight()/viewport.getWorldHeight()) ) {
+						camera.zoom = (regions.get(i).getWidth() + 20)/viewport.getWorldWidth();
+					}
+					else {
+						camera.zoom = (regions.get(i).getHeight() + 20)/viewport.getWorldHeight();
+					}
+					
+					break;
+					
+				}
+				
+			}
+			
 			viewport.apply();
+			refreshScale();
+			
+			return true;
 		}
 		
-		if(button == Input.Buttons.RIGHT && hitboxCheck()) {
+		if(button == Input.Buttons.RIGHT) {
 //			System.out.println(viewport.getWorldHeight());
 //			viewport.setWorldSize(viewport.getWorldWidth() +100, viewport.getWorldHeight() +100);
-			camera.zoom -= 0.1;
-			refreshScale();
+//			camera.zoom -= 0.1;
+			
+			camera.position.x = viewport.getWorldWidth() / 2;
+			camera.position.y = viewport.getWorldHeight() / 2;
+			camera.zoom = 1;
+			
 			viewport.apply();
+			refreshScale();
+			
+			return true;
 		}
+		
+		zoom = camera.zoom;
 		
 		return false;
 	}

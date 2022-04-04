@@ -44,6 +44,14 @@ public class Region extends Sprite {
 //		setAlpha(oldAlpha);
 //	}
 	
+	public float getMidX() {
+		return this.getBoundingRectangle().getX() + (this.getBoundingRectangle().getWidth() / 2);
+	}
+	
+	public float getMidY() {
+		return this.getBoundingRectangle().getY() + (this.getBoundingRectangle().getHeight() / 2);
+	}
+	
 	//Getter for mouseOver
 	public boolean getMouseOver() {
 		return this.mouseOver;
