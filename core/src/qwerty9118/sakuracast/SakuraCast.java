@@ -15,6 +15,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Polygon;
@@ -31,15 +32,17 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	private Viewport viewport;
 	private OrthographicCamera camera;
 	private List<String> regionLoc;
+	private List<String> regionLocS;
 	private List<Region> regions;
-//	private List<Rectangle> regionHitboxes;
 	private List<Polygon> regionHitpolys;
 	private List<List<Integer>> regionPos;
 	private List<Blossom> blossoms;
 	private List<Texture> blossomTex;
+	private List<TestSite> testSites;
+	private TestSite templateSite;
+	private Texture jmaTex;
 	private float width;
 	private float height;
-//	private ShapeRenderer shaperend;
 	private int DATE;
 	private float zoom;
 	private Vector3 zTextLoc;
@@ -53,7 +56,9 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		height = bgImage.getHeight();
 		
 		// load the rest of the images for the program
+		jmaTex = new Texture(Gdx.files.internal("jma.png"));
 		regionLoc = new ArrayList<String>();
+		regionLocS = new ArrayList<String>();
 		blossomTex = new ArrayList<Texture>();
 		populateRegionTex();
 		populateBlossomTex();
@@ -61,7 +66,8 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		// load the font
 		font = new BitmapFont();
 		font.setColor(Color.WHITE);
-		font.getData().setScale(2f);
+//		font.getData().setScale(2f);
+		font.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		
 		//set zoom level label location
 		zTextLoc = new Vector3(20, 20, 0);
@@ -89,6 +95,10 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
+		//create & populate the testSites array
+		testSites = new ArrayList<TestSite>();
+		populateTestSites();
+		
 //		shaperend = new ShapeRenderer();
 		
 		Gdx.input.setInputProcessor(this);
@@ -100,11 +110,18 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 		//loop through all files ("FileHandle"s) in the "regions" folder.
 		for(FileHandle f : Gdx.files.internal("regions/").list()) {
-			this.regionLoc.add(f.toString());
+			//if it's a 
+			if(f.toString().endsWith("S.png")) {
+				this.regionLocS.add(f.toString());
+			}
+			else {
+				this.regionLoc.add(f.toString());
+			}
 		}
 		
-		//Sort the list.
+		//Sort the lists.
 		Collections.sort(this.regionLoc);
+		Collections.sort(this.regionLocS);
 		
 	}
 
@@ -143,18 +160,13 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		regionHitpolys.add(new Polygon( new float[]{508,596,525,636,391,701,369,651} ));//Shikoku
 		regionHitpolys.add(new Polygon( new float[]{792,258,938,243,856,482,761,459,797,411,771,382} ));//Tohoku
 		
-//		//scale the coordinates.
-//		for(int i = 0; i < regionHitpolys.size(); i++) {
-//			regionHitpolys.get(i).setScale((float) Gdx.graphics.getWidth() / width, (float) Gdx.graphics.getHeight() / height);
-//		}
-		
 		
 		
 		//loop once for each location in regionLoc
 		for(int i = 0; i < this.regionLoc.size(); i++) {
 			
 			//initialize the variables for this loop
-			region = new Region(new Texture(this.regionLoc.get(i)));
+			region = new Region(new Texture(this.regionLoc.get(i)), new Texture(this.regionLocS.get(i)));
 			x = this.regionPos.get(i).get(0);
 			y = this.regionPos.get(i).get(1);
 			texWidth = this.regionPos.get(i).get(2);
@@ -166,20 +178,11 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			region.setRotation(this.regionPos.get(i).get(4));
 			this.regions.add(region);
 			
-//			//modify the variables to have the hitboxes be positioned correctly.
-//			x *= (float) Gdx.graphics.getWidth() / width;
-//			y = (float) Gdx.graphics.getHeight() - ((texHeight + y) * ((float) Gdx.graphics.getHeight() / height));
-//			
-//			texWidth *= (float) Gdx.graphics.getWidth() / width;
-//			texHeight *= (float) Gdx.graphics.getHeight() / height;
-//			
-//			//set this loop's hitbox.
-//			rect = new Rectangle(x, y, texWidth, texHeight);
-//			this.regionHitboxes.add(rect);
 		}
+		
 	}
 
-	//this populates the region texture array with textures.
+	//this populates the blossom texture array with textures.
 	private void populateBlossomTex() {
 		
 		List<String> blossomLoc = new ArrayList<String>();
@@ -206,8 +209,20 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	private void populateBlossoms() {
 		
 		Random r = new Random();
-		int cellSize = 12;
-		int texSize = (int) (48 * zoom);
+		int cellSize = 16;
+		
+		if(Gdx.graphics.getWidth() < Gdx.graphics.getHeight()) {
+			cellSize = (int) (Gdx.graphics.getWidth() / (573d/12d));
+		}
+		else {
+			cellSize = (int) (Gdx.graphics.getHeight() / (574d/12d));
+		}
+		
+		if(cellSize < 1) {
+			cellSize = 1;
+		}
+		
+		int texSize = (int) (32 * zoom);
 		int gridWidth = (int) (Gdx.graphics.getWidth() / cellSize);
 		int gridHeight = (int) (Gdx.graphics.getHeight() / cellSize);
 		Blossom blossom;
@@ -245,6 +260,132 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		}
 		//Sort the list.
 		Collections.sort(this.regionLoc);
+	}
+	
+	private void populateTestSites(){
+		
+		int texSize = 8;//(int) (16 * zoom);
+		templateSite = new TestSite(jmaTex);
+		templateSite.setSize(texSize, texSize);
+		
+		//this will be painful to look at, but i'm rapidly running out of time and i need to do this fast, so i'm taking the copy-paste-code route for these coordinates.
+		// (used as template for replace function in notepad++) => );\npopulateTestSite(
+		//create & add all test sites to the array:
+		
+		populateTestSite(328,1035);
+		populateTestSite(135,1015);
+		populateTestSite(134,1017);
+		populateTestSite(006,1081);
+		populateTestSite(200,607);
+		populateTestSite(201,675);
+		populateTestSite(254,686);
+		populateTestSite(278,665);
+		populateTestSite(286,648);
+		populateTestSite(313,625);
+		populateTestSite(341,617);
+		populateTestSite(342,662);
+		populateTestSite(304,679);
+		populateTestSite(287,744);
+		populateTestSite(334,731);
+		populateTestSite(408,683);
+		populateTestSite(402,662);
+		populateTestSite(418,630);
+		populateTestSite(455,647);
+		populateTestSite(505,620);
+		populateTestSite(395,606);
+		populateTestSite(383,575);
+		populateTestSite(423,552);
+		populateTestSite(443,552);
+		populateTestSite(444,506);
+		populateTestSite(493,549);
+		populateTestSite(484,569);
+		populateTestSite(481,608);
+		populateTestSite(479,591);
+		populateTestSite(484,569);
+		populateTestSite(529,547);
+		populateTestSite(554,555);
+		populateTestSite(519,582);
+		populateTestSite(532,598);
+		populateTestSite(522,610);
+		populateTestSite(543,611);
+		populateTestSite(555,592);
+		populateTestSite(566,594);
+		populateTestSite(577,591);
+		populateTestSite(564,581);
+		populateTestSite(575,649);
+		populateTestSite(602,619);
+		populateTestSite(616,588);
+		populateTestSite(598,563);
+		populateTestSite(590,547);
+		populateTestSite(600,525);
+		populateTestSite(630,556);
+		populateTestSite(640,564);
+		populateTestSite(677,591);
+		populateTestSite(762,688);
+		populateTestSite(622,498);
+		populateTestSite(652,490);
+		populateTestSite(640,453);
+		populateTestSite(654,521);
+		populateTestSite(678,551);
+		populateTestSite(697,524);
+		populateTestSite(692,517);
+		populateTestSite(702,498);
+		populateTestSite(703,474);
+		populateTestSite(712,421);
+		populateTestSite(747,431);
+		populateTestSite(795,452);
+		populateTestSite(749,500);
+		populateTestSite(731,539);
+		populateTestSite(721,577);
+		populateTestSite(744,569);
+		populateTestSite(756,572);
+		populateTestSite(759,523);
+		populateTestSite(769,517);
+		populateTestSite(794,504);
+		populateTestSite(799,540);
+		populateTestSite(789,551);
+		populateTestSite(815,546);
+		populateTestSite(822,565);
+		populateTestSite(799,576);
+		populateTestSite(850,537);
+		populateTestSite(834,504);
+		populateTestSite(857,475);
+		populateTestSite(809,475);
+		populateTestSite(832,448);
+		populateTestSite(825,414);
+		populateTestSite(862,408);
+		populateTestSite(880,401);
+		populateTestSite(902,371);
+		populateTestSite(913,342);
+		populateTestSite(866,336);
+		populateTestSite(825,379);
+		populateTestSite(794,378);
+		populateTestSite(810,335);
+		populateTestSite(801,294);
+		populateTestSite(844,282);
+		populateTestSite(883,293);
+		populateTestSite(876,260);
+		populateTestSite(848,232);
+		populateTestSite(859,205);
+		populateTestSite(899,182);
+		populateTestSite(883,171);
+		populateTestSite(936,135);
+		populateTestSite(897,050);
+		populateTestSite(980,177);
+		populateTestSite(1045,172);
+		populateTestSite(1038,122);
+		
+	}
+	
+	private void populateTestSite(int x, int y) {
+		
+		y = (int) (height - y);
+		
+		TestSite ts = new TestSite();
+		ts.set(templateSite);
+		ts.setCenter(x,y);
+		testSites.add(ts);
+		
 	}
 	
 	//hitbox checking functions; they check for whether or not a point is inside of a certain hitbox (or all of them).
@@ -322,6 +463,11 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	//refresh anything that needs to be after scaling the window.
 	private void refreshScale() {
 		
+		//tell the regions they aren't zoomed into.
+		for(Region r : regions) {
+			r.setZoomedInto(false);
+		}
+		
 		//scale the coordinates.
 		for(int i = 0; i < regionHitpolys.size(); i++) {
 			
@@ -332,21 +478,24 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		this.blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
-		if(Gdx.graphics.getHeight() < Gdx.graphics.getWidth()) {
-			font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
+		this.testSites = new ArrayList<TestSite>();
+		populateTestSites();
+		
+		if(Gdx.graphics.getHeight() > Gdx.graphics.getWidth()) {
+			font.getData().setScale(Gdx.graphics.getHeight() / viewport.getWorldHeight());
 		}
 		else {
-			font.getData().setScale(viewport.getWorldWidth() / Gdx.graphics.getWidth());
+			font.getData().setScale(Gdx.graphics.getWidth() / viewport.getWorldWidth());
 		}
 		zTextLoc = guiPosOnWorld(20, 20);
 		
 	}
 	
-//	public int sakuraFront(float temp) {
-//		
-//		return e^( ( 9.5 * 10^3 ) * ( ( temp - 288.2 ) / ( 288.2 * temp ) ) );
-//		
-//	}
+	public double sakuraFront(float temp) {
+		
+		return Math.exp( 9500 * ( ( temp - 288.2 ) / ( 288.2 * temp ) ) );
+		
+	}
 
 	@Override
 	public void render() {
@@ -360,10 +509,10 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		//loop through all hitboxes and play a sound if a hitbox is hovered over
 		for(int i = 0; i < this.regions.size(); i++) {
 			//check if hitbox contains mouse
-			if(hitboxCheck(i)) {
+			if(hitboxCheck(i) && !this.regions.get(i).getZoomedInto()) {
 				
 				if(this.regions.get(i).getMouseOver() == false) {
-					this.sfxSelect.play(0.5f);
+					this.sfxSelect.play(0.1f);
 					this.regions.get(i).setMouseOver(true);
 					
 					if(i == 5 || i == 6) {
@@ -419,6 +568,10 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			blossom.draw(batch);
 		}
 		
+		for (TestSite ts : testSites) {
+			ts.draw(batch);
+		}
+		
 		batch.end();
 	}
 
@@ -428,9 +581,13 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		//TODO: check to see if anything else needs to be disposed properly/differently.
 		for(Region region : regions) {
 			region.getTexture().dispose();
+			region.getHoverTexture().dispose();
 		}
 		for(Texture t : blossomTex) {
 			t.dispose();
+		}
+		for(TestSite ts : testSites) {
+			ts.getTexture().dispose();
 		}
 		font.dispose();
 		sfxSelect.dispose();
@@ -473,7 +630,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		System.out.println(camera.zoom);
+//		System.out.println(camera.zoom);
 		if(button == Input.Buttons.LEFT) {
 //			System.out.println(viewport.getWorldHeight());
 //			viewport.setWorldSize(viewport.getWorldWidth() -100, viewport.getWorldHeight() -100);
@@ -495,14 +652,18 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 					
 					zoom = camera.zoom;
 					
+					//special magic that lets everything render correctly.
+					viewport.apply();
+					refreshScale();
+					
+					//tell the current region that actually it is zoomed into.
+					regions.get(i).setZoomedInto(true);
+					
 					break;
 					
 				}
 				
 			}
-			
-			viewport.apply();
-			refreshScale();
 			
 			return true;
 		}
@@ -517,6 +678,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			camera.zoom = 1;
 			zoom = camera.zoom;
 			
+			//special magic that lets everything render correctly.
 			viewport.apply();
 			refreshScale();
 			

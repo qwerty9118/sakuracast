@@ -1,6 +1,5 @@
 package qwerty9118.sakuracast;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -10,14 +9,16 @@ public class Region extends Sprite {
 	static final int VERTEX_SIZE = 2 + 1 + 2;
 	static final int SPRITE_SIZE = 4 * VERTEX_SIZE;
 	private boolean mouseOver;
+	private boolean zoomedInto;
 	private Texture hoverTexture;
 	
-	public Region(Texture texture) {
+	public Region(Texture texture, Texture hoverTexture) {
 		super(texture);
 		//store the texture so that it can be temporarily changed
-		this.hoverTexture = new Texture(Gdx.files.internal("folder2.png"));
-		//Set mouseOver to false when created
+		this.hoverTexture = hoverTexture;
+		//Set mouseOver & zoomedInto to false when created
 		this.mouseOver = false;
+		this.zoomedInto = false;
 	}
 	
 //	public Texture getHoverTexture () {
@@ -60,6 +61,21 @@ public class Region extends Sprite {
 	//Setter for mouseOver
 	public void setMouseOver(boolean mouseOver) {
 		this.mouseOver = mouseOver;
+	}
+	
+	//Getter for zoomedInto
+	public boolean getZoomedInto() {
+		return this.zoomedInto;
+	}
+
+	//Setter for zoomedInto
+	public void setZoomedInto(boolean zoomedInto) {
+		this.zoomedInto = zoomedInto;
+	}
+	
+	//Getter for hover texture, for disposing
+	public Texture getHoverTexture() {
+		return this.hoverTexture;
 	}
 	
 }
