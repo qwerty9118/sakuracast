@@ -10,6 +10,7 @@ import java.util.Random;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
@@ -26,12 +27,15 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class SakuraCast extends Game implements InputProcessor {//ApplicationAdapter implements InputProcessor {
+	public InputMultiplexer inputM;
 	private Texture bgImage;
 	private BitmapFont font;
 	private Sound sfxSelect;
 	public SpriteBatch batch;
 	public Viewport viewport;
+	public Viewport viewportGui;
 	private OrthographicCamera camera;
+	private OrthographicCamera cameraGui;
 	private Settings settings;
 	private SettingsButton settingsBtn;
 	private List<String> regionLoc;
@@ -52,6 +56,9 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 
 	@Override
 	public void create() {
+		
+		//initialise the input multiplexer, to allow handling of two input processors at once - the SakuraCast one, and the Settings one.
+		inputM = new InputMultiplexer();
 		
 		// load the background image & set internal size
 		bgImage = new Texture(Gdx.files.internal("watrMap.png"));
@@ -78,10 +85,14 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		// load any sound effects
 		sfxSelect = Gdx.audio.newSound(Gdx.files.internal("select.wav"));
 
-		// create the camera, the viewport, and the SpriteBatch
+		// create the cameras, the viewports, and the SpriteBatch
+		// (there's multiple cameras & viewports so that I can do the settings menu GUI)
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, width, height);
+		cameraGui = new OrthographicCamera();
+		cameraGui.setToOrtho(false, width, height);
 		viewport = new FitViewport(width, height, camera);
+		viewportGui = new FitViewport(width, height, cameraGui);
 		batch = new SpriteBatch();
 		
 		//set up the settings screen
@@ -113,7 +124,11 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 //		shaperend = new ShapeRenderer();
 		
-		Gdx.input.setInputProcessor(this);
+		//add this to inputM
+		inputM.addProcessor(this);
+		
+		//set the input processor to the input multiplexer.
+		Gdx.input.setInputProcessor(inputM);
 		
 		
 		
@@ -248,7 +263,6 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 //					hmm = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
 					blossom = new Blossom(this.blossomTex, 0);
 					blossom.setBounds(hmm.x-(texSize/2), hmm.y-(texSize/2), texSize, texSize);
-					blossom.setBloomLevel(2+r.nextInt(2));
 					
 					this.blossoms.add(blossom);
 					
@@ -471,7 +485,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	}
 	
 	//translates a position on the window into the position where it appears that it is in the world.
-	private Vector3 guiPosOnWorld(int x, int y) {
+	public Vector3 guiPosOnWorld(float x, float y) {
 		return camera.unproject(new Vector3(x, y, 0));
 	}
 	
@@ -491,13 +505,6 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		this.blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
-		
-//		if(Gdx.graphics.getHeight() > Gdx.graphics.getWidth()) {
-//			font.getData().setScale(Gdx.graphics.getHeight() / viewport.getWorldHeight());
-//		}
-//		else {
-//			font.getData().setScale(Gdx.graphics.getWidth() / viewport.getWorldWidth());
-//		}
 		
 	}
 	
@@ -586,6 +593,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		// tell the SpriteBatch to render in the
 		// coordinate system specified by the camera.
 		batch.setProjectionMatrix(camera.combined);
+		viewport.apply();
 		
 //		shaperend.setProjectionMatrix(camera.combined);
 		
@@ -607,16 +615,20 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 			ts.draw(batch);
 		}
 		
+		settingsBtn.draw(batch);
+		
 		//if the settings are visible, render them.
 		if(settings.visible()) {
 			
+			batch.setProjectionMatrix(cameraGui.combined);
+			viewportGui.apply(true);
+			
 			settings.render(Gdx.graphics.getDeltaTime());
 			
-			font.draw(batch, "Zoom level:"+zoom, width/4, (height/20) * 19);
+			font.draw(batch, "Zoom level: "+zoom, width/40, (height/40) * 37);
+			font.draw(batch, "Date: "+Settings.date.toString(), width/40, (height/40) * 36);
 			
 		}
-		
-		settingsBtn.draw(batch);
 		
 		batch.end();
 	}
@@ -646,8 +658,9 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	//Resize the viewport when the window is resized.
 	@Override
 	public void resize(int width, int height) {
-		settings.resize(width, height);
 		viewport.update(width, height);
+		viewportGui.update(width, height);
+		settings.resize(width, height);
 		refreshScale();
 	}
 	
@@ -723,6 +736,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 					
 					//special magic that lets everything render correctly.
 					viewport.apply();
+					viewportGui.apply();
 					refreshScale();
 					
 					break;
@@ -750,6 +764,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 				
 				//special magic that lets everything render correctly.
 				viewport.apply();
+				viewportGui.apply();
 				refreshScale();
 				
 				return true;
