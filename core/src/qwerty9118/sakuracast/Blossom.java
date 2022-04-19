@@ -1,5 +1,6 @@
 package qwerty9118.sakuracast;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Random;
 
@@ -15,12 +16,20 @@ public class Blossom extends Sprite {
 	private List<Texture> textures;
 	private boolean variant;
 	private int dateVariance;
+	private int closestSite;
+	private LocalDate Ds;
+	private LocalDate BD;
 	
-	public Blossom(List<Texture> blossomTex) {
+	public Blossom(List<Texture> blossomTex, int closestSite) {
 		super(blossomTex.get(0));
 		this.textures = blossomTex;
 		this.variant = new Random().nextBoolean();
+		this.dateVariance = new Random().nextInt(5)-2;
 		this.bloomLevel = 0;
+		this.closestSite = closestSite;
+		
+		this.Ds = SakuraCast.testSites.get(this.closestSite).getDs().plusDays(dateVariance);
+		this.BD = SakuraCast.testSites.get(this.closestSite).getBD().plusDays(dateVariance);
 	}
 	
 	@Override
@@ -30,6 +39,30 @@ public class Blossom extends Sprite {
 	
 	@Override
 	public Texture getTexture () {
+		
+		double bloomStageLvl = 14/3;
+		
+		if(SakuraCast.date.isBefore(this.Ds)) {
+			bloomLevel = 0;
+		}
+		else if(SakuraCast.date.isBefore(this.BD)) {
+			bloomLevel = 1;
+		}
+		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl))) {
+			bloomLevel = 2;
+		}
+		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl*2 + dateVariance/2))) {
+			bloomLevel = 3;
+		}
+		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl*3 + dateVariance))) {
+			bloomLevel = 4;
+		}
+		else {
+			bloomLevel = 0;
+		}
+		
+		
+		
 		
 		//displays a different texture depending on bloom level.
 		switch(bloomLevel) {

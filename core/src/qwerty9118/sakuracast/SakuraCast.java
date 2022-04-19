@@ -1,5 +1,6 @@
 package qwerty9118.sakuracast;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +21,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -38,17 +40,22 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	private List<List<Integer>> regionPos;
 	private List<Blossom> blossoms;
 	private List<Texture> blossomTex;
-	private List<TestSite> testSites;
+	static List<TestSite> testSites;
 	private TestSite templateSite;
 	private Texture jmaTex;
 	private float width;
 	private float height;
-	private int DATE;
+	static LocalDate date;
+	private Slider dateSlider;
 	private float zoom;
 	private Vector3 zTextLoc;
+	private LocalDate date2;
 
 	@Override
 	public void create() {
+		
+		//initialise date as the current date, for convenience
+		date = LocalDate.now();
 		
 		// load the background image & set internal size
 		bgImage = new Texture(Gdx.files.internal("watrMap.png"));
@@ -66,7 +73,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		// load the font
 		font = new BitmapFont();
 		font.setColor(Color.WHITE);
-//		font.getData().setScale(2f);
+		font.getData().setScale(2f);
 		font.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		
 		//set zoom level label location
@@ -74,6 +81,11 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 		//set stored zoom level
 		zoom = 1f;
+		
+		//slider
+//		date = new Slider(1, MAX_BPM, INC_BPM, false, skin);
+		
+		//
 		
 		// load any sound effects
 		sfxSelect = Gdx.audio.newSound(Gdx.files.internal("select.wav"));
@@ -91,17 +103,21 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		regionPos = new ArrayList<List<Integer>>();
 		populateRegions();
 		
+		//create & populate the testSites array (BEFORE blossoms, as blossoms take values from test sites)
+		testSites = new ArrayList<TestSite>();
+		populateTestSites();
+		
 		//create & populate the blossoms array
 		blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
-		//create & populate the testSites array
-		testSites = new ArrayList<TestSite>();
-		populateTestSites();
-		
 //		shaperend = new ShapeRenderer();
 		
 		Gdx.input.setInputProcessor(this);
+		
+		
+		
+//		System.out.println(sakuraFront(635));
 		
 	}
 
@@ -210,21 +226,9 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 		Random r = new Random();
 		int cellSize = 16;
-		
-		if(Gdx.graphics.getWidth() < Gdx.graphics.getHeight()) {
-			cellSize = (int) (Gdx.graphics.getWidth() / (573d/12d));
-		}
-		else {
-			cellSize = (int) (Gdx.graphics.getHeight() / (574d/12d));
-		}
-		
-		if(cellSize < 1) {
-			cellSize = 1;
-		}
-		
 		int texSize = (int) (32 * zoom);
-		int gridWidth = (int) (Gdx.graphics.getWidth() / cellSize);
-		int gridHeight = (int) (Gdx.graphics.getHeight() / cellSize);
+		int gridWidth = (int) (width / cellSize)+1;
+		int gridHeight = (int) (height / cellSize)+1;
 		Blossom blossom;
 		int xCoord;
 		int yCoord;
@@ -234,15 +238,16 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			
 			for(int x = 0; x < gridWidth; x++) {
 				
-				xCoord = x*cellSize + r.nextInt(cellSize);
-				yCoord = y*cellSize + r.nextInt(cellSize);
+				xCoord = (int) ( ( ( x / width ) * Gdx.graphics.getWidth() ) * cellSize + r.nextInt(cellSize) );
+				yCoord = (int) ( ( ( y / height ) * Gdx.graphics.getHeight() ) * cellSize + r.nextInt(cellSize) );
 				
-				hmm = guiPosOnWorld(xCoord+(texSize/2), yCoord+(texSize/2));
+				hmm = guiPosOnWorld(xCoord, yCoord);
 				
 				if(hitboxCheck((int) hmm.x, (int) hmm.y)) {
 					
-					blossom = new Blossom(this.blossomTex);
-					blossom.setBounds(hmm.x, hmm.y, texSize, texSize);
+//					hmm = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
+					blossom = new Blossom(this.blossomTex, 0);
+					blossom.setBounds(hmm.x-(texSize/2), hmm.y-(texSize/2), texSize, texSize);
 					blossom.setBloomLevel(2+r.nextInt(2));
 					
 					this.blossoms.add(blossom);
@@ -377,14 +382,24 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 	}
 	
+	//populate one test site
 	private void populateTestSite(int x, int y) {
 		
+		//correct the friggin height value
 		y = (int) (height - y);
 		
+		//generate a new TestSite object to avoid problems with passing by reference.
 		TestSite ts = new TestSite();
-		ts.set(templateSite);
-		ts.setCenter(x,y);
-		testSites.add(ts);
+		ts.set(templateSite);//make the new object identical to the template object that is stored globally.
+		ts.setCenter(x,y);//pass in the coordinates to the new object.
+		ts.setTemp(10+new Random().nextDouble()*10);//give it a random temperature.
+		
+		//values are from Sendai from the pdf that I'm using as a main source.
+		//this is temporary.
+		ts.setDs(LocalDate.of(2022, 2, 12));
+		ts.setBD(LocalDate.of(2022, 4, 29));
+		
+		testSites.add(ts);//add it to the array.
 		
 	}
 	
@@ -463,11 +478,6 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	//refresh anything that needs to be after scaling the window.
 	private void refreshScale() {
 		
-		//tell the regions they aren't zoomed into.
-		for(Region r : regions) {
-			r.setZoomedInto(false);
-		}
-		
 		//scale the coordinates.
 		for(int i = 0; i < regionHitpolys.size(); i++) {
 			
@@ -475,11 +485,12 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			
 		}
 		
-		this.blossoms = new ArrayList<Blossom>();
-		populateBlossoms();
-		
+		//this bit is pretty much the same as the initial creation of test sites and blossoms.
 		this.testSites = new ArrayList<TestSite>();
 		populateTestSites();
+		
+		this.blossoms = new ArrayList<Blossom>();
+		populateBlossoms();
 		
 		if(Gdx.graphics.getHeight() > Gdx.graphics.getWidth()) {
 			font.getData().setScale(Gdx.graphics.getHeight() / viewport.getWorldHeight());
@@ -499,12 +510,6 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public void render() {
-//		System.out.println(mousePosOnWorld().x + ", " + mousePosOnWorld().y);
-//		Blossom blossom1 = new Blossom(this.blossomTex);
-//		blossom1.setBounds(mousePosOnWorld().x, mousePosOnWorld().y, 20, 20);
-//		blossom1.setBloomLevel(4);
-//		this.blossoms.add(blossom1);
-		
 		
 		//loop through all hitboxes and play a sound if a hitbox is hovered over
 		for(int i = 0; i < this.regions.size(); i++) {
@@ -638,7 +643,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			
 			for(int i = 0; i < regions.size(); i++) {
 				
-				if(hitboxCheck(i)) {
+				if(hitboxCheck(i) && !this.regions.get(i).getZoomedInto()) {
 					
 					camera.position.x = regions.get(i).getMidX();
 					camera.position.y = regions.get(i).getMidY();
@@ -652,12 +657,17 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 					
 					zoom = camera.zoom;
 					
-					//special magic that lets everything render correctly.
-					viewport.apply();
-					refreshScale();
+					//tell the regions they aren't zoomed into.
+					for(Region r : regions) {
+						r.setZoomedInto(false);
+					}
 					
 					//tell the current region that actually it is zoomed into.
 					regions.get(i).setZoomedInto(true);
+					
+					//special magic that lets everything render correctly.
+					viewport.apply();
+					refreshScale();
 					
 					break;
 					
@@ -669,20 +679,27 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		}
 		
 		if(button == Input.Buttons.RIGHT) {
-//			System.out.println(viewport.getWorldHeight());
-//			viewport.setWorldSize(viewport.getWorldWidth() +100, viewport.getWorldHeight() +100);
-//			camera.zoom -= 0.1;
 			
-			camera.position.x = viewport.getWorldWidth() / 2;
-			camera.position.y = viewport.getWorldHeight() / 2;
-			camera.zoom = 1;
-			zoom = camera.zoom;
+			if(zoom != 1) {
+				
+				camera.position.x = viewport.getWorldWidth() / 2;
+				camera.position.y = viewport.getWorldHeight() / 2;
+				camera.zoom = 1;
+				zoom = 1;
+				
+				//tell the regions they aren't zoomed into.
+				for(Region r : regions) {
+					r.setZoomedInto(false);
+				}
+				
+				//special magic that lets everything render correctly.
+				viewport.apply();
+				refreshScale();
+				
+				return true;
+				
+			}
 			
-			//special magic that lets everything render correctly.
-			viewport.apply();
-			refreshScale();
-			
-			return true;
 		}
 		
 		zoom = camera.zoom;
