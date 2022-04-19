@@ -262,8 +262,8 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 					
 //					hmm = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
 					
-//					blossom = new Blossom(this.blossomTex, closestTestSite(hmm.x-(texSize/2), hmm.y-(texSize/2)));
-					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(hmm.x-(texSize/2), hmm.y-(texSize/2)));
+					blossom = new Blossom(this.blossomTex, closestTestSite(hmm.x-(texSize/2), hmm.y-(texSize/2)));
+//					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(hmm.x-(texSize/2), hmm.y-(texSize/2)));
 					
 					blossom.setBounds(hmm.x-(texSize/2), hmm.y-(texSize/2), texSize, texSize);
 					

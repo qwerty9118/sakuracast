@@ -10,6 +10,8 @@ public class TestSite extends Sprite {
 
 	static final int VERTEX_SIZE = 2 + 1 + 2;
 	static final int SPRITE_SIZE = 4 * VERTEX_SIZE;
+	private boolean mouseOver;
+	private boolean selected;
 	private LocalDate Ds;
 	private LocalDate BD;
 	//temp in degrees celcius
