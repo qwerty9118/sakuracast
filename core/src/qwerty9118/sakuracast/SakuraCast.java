@@ -261,7 +261,10 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 				if(hitboxCheck((int) hmm.x, (int) hmm.y)) {
 					
 //					hmm = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
-					blossom = new Blossom(this.blossomTex, 0);
+					
+//					blossom = new Blossom(this.blossomTex, closestTestSite(hmm.x-(texSize/2), hmm.y-(texSize/2)));
+					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(hmm.x-(texSize/2), hmm.y-(texSize/2)));
+					
 					blossom.setBounds(hmm.x-(texSize/2), hmm.y-(texSize/2), texSize, texSize);
 					
 					this.blossoms.add(blossom);
@@ -279,6 +282,68 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		}
 		//Sort the list.
 		Collections.sort(this.regionLoc);
+	}
+	
+	private int closestTestSite(float x, float y) {
+		
+		int closest = 0;
+		double dist = 500;
+		double tempDist;
+		
+		for(int i = 0; i < testSites.size(); i++) {
+			
+			tempDist = testSites.get(i).getCentre().dst(x, y);
+			
+			if(tempDist < dist) {
+				closest = i;
+				dist = tempDist;
+			}
+			
+		}
+		
+		return closest;
+		
+	}
+	
+	private ArrayList<Double> closestTestSiteSmooth(float x, float y) {
+		
+		double closest = 0;
+		double closest2 = 0;
+		double closest3 = 0;
+		double dist = 500;
+		double dist2 = 500;
+		double dist3 = 500;
+		double tempDist;
+		
+		for(int i = 0; i < testSites.size(); i++) {
+			
+			tempDist = testSites.get(i).getCentre().dst(x, y);
+			
+			if(tempDist < dist) {
+				closest = i;
+				dist = tempDist;
+			}
+			else if(tempDist < dist2) {
+				closest2 = i;
+				dist2 = tempDist;
+			}
+			else if(tempDist < dist3) {
+				closest3 = i;
+				dist3 = tempDist;
+			}
+			
+		}
+		
+		ArrayList<Double> list = new ArrayList<Double>();
+		list.add(closest);
+		list.add(dist);
+		list.add(closest2);
+		list.add(dist2);
+		list.add(closest3);
+		list.add(dist3);
+		
+		return list;
+		
 	}
 	
 	private void populateTestSites(){
@@ -410,9 +475,8 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		//values are from Sendai from the pdf that I'm using as a main source.
 		//this is temporary.
-		ts.setDs(LocalDate.of(2022, 2, 12));
-		ts.setBD(LocalDate.of(2022, 4, 29));
-		
+		ts.setDs(LocalDate.ofYearDay(2022, 15 + new Random().nextInt(26)));//LocalDate.of(2022, 2, 12));
+		ts.setBD(LocalDate.ofYearDay(2022, 88 + new Random().nextInt(32)));//LocalDate.of(2022, 4, 29));
 		testSites.add(ts);//add it to the array.
 		
 	}

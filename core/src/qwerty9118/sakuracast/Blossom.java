@@ -1,6 +1,7 @@
 package qwerty9118.sakuracast;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -28,6 +29,27 @@ public class Blossom extends Sprite {
 		
 		this.Ds = SakuraCast.testSites.get(this.closestSite).getDs().plusDays(dateVariance);
 		this.BD = SakuraCast.testSites.get(this.closestSite).getBD().plusDays(dateVariance);
+	}
+	
+	public Blossom(List<Texture> blossomTex, ArrayList<Double> closestSite) {
+		super(blossomTex.get(0));
+		this.textures = blossomTex;
+		this.variant = new Random().nextBoolean();
+		this.dateVariance = new Random().nextInt(5)-2;
+		this.closestSite = closestSite.get(0).intValue();
+		
+		this.Ds = LocalDate.ofYearDay(2022, (int) (
+				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(1)
+				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(3)
+				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(5))
+				/ (closestSite.get(1) + closestSite.get(3) + closestSite.get(5))));
+		
+		this.BD = LocalDate.ofYearDay(2022, (int) (
+				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(1)
+				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(3)
+				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(5))
+				/ (closestSite.get(1) + closestSite.get(3) + closestSite.get(5))));
+		
 	}
 	
 	@Override

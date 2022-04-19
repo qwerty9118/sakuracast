@@ -37,7 +37,7 @@ public class Settings implements Screen {
 		Skin skin = new Skin(Gdx.files.internal("data/uiskin.json"));
 		dateSlider = new Slider(1, 180, 1, false, skin);
 		dateSlider.setBounds(stage.getWidth()/3, (stage.getHeight()/20) * 19, stage.getWidth()/3, stage.getHeight()/20);
-		dateSlider.setValue(120);
+		dateSlider.setValue(100);
 		dateSlider.addListener(new ChangeListener() {
 			@Override
 			public void changed(ChangeEvent event, Actor actor) {

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.math.Vector2;
 
 public class TestSite extends Sprite {
 
@@ -78,6 +79,10 @@ public class TestSite extends Sprite {
 	
 	public float getCentreY() {
 		return this.getBoundingRectangle().getY() + (this.getBoundingRectangle().getHeight() / 2);
+	}
+	
+	public Vector2 getCentre() {
+		return new Vector2(getCentreX(), getCentreY());
 	}
 	
 }
