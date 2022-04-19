@@ -42,19 +42,19 @@ public class Blossom extends Sprite {
 		
 		double bloomStageLvl = 14/3;
 		
-		if(SakuraCast.date.isBefore(this.Ds)) {
+		if(Settings.date().isBefore(this.Ds)) {
 			bloomLevel = 0;
 		}
-		else if(SakuraCast.date.isBefore(this.BD)) {
+		else if(Settings.date().isBefore(this.BD)) {
 			bloomLevel = 1;
 		}
-		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl))) {
+		else if(Settings.date().isBefore(this.BD.plusDays((long) bloomStageLvl))) {
 			bloomLevel = 2;
 		}
-		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl*2 + dateVariance/2))) {
+		else if(Settings.date().isBefore(this.BD.plusDays((long) bloomStageLvl*2 + dateVariance/2))) {
 			bloomLevel = 3;
 		}
-		else if(SakuraCast.date.isBefore(this.BD.plusDays((long) bloomStageLvl*3 + dateVariance))) {
+		else if(Settings.date().isBefore(this.BD.plusDays((long) bloomStageLvl*3 + dateVariance))) {
 			bloomLevel = 4;
 		}
 		else {
@@ -105,11 +105,6 @@ public class Blossom extends Sprite {
 	//Setter for bloomLevel
 	public void setBloomLevel(int bloomLevel) {
 		this.bloomLevel = bloomLevel;
-	}
-
-	//Incrementer for bloomLevel
-	public void nextBloomLevel() {
-		this.bloomLevel++;
 	}
 	
 }

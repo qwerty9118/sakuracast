@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
@@ -21,18 +21,19 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-public class SakuraCast extends ApplicationAdapter implements InputProcessor {
+public class SakuraCast extends Game implements InputProcessor {//ApplicationAdapter implements InputProcessor {
 	private Texture bgImage;
 	private BitmapFont font;
 	private Sound sfxSelect;
-	private SpriteBatch batch;
-	private Viewport viewport;
+	public SpriteBatch batch;
+	public Viewport viewport;
 	private OrthographicCamera camera;
+	private Settings settings;
+	private SettingsButton settingsBtn;
 	private List<String> regionLoc;
 	private List<String> regionLocS;
 	private List<Region> regions;
@@ -45,17 +46,12 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	private Texture jmaTex;
 	private float width;
 	private float height;
-	static LocalDate date;
-	private Slider dateSlider;
+//	static LocalDate date;
+//	private Slider dateSlider;
 	private float zoom;
-	private Vector3 zTextLoc;
-	private LocalDate date2;
 
 	@Override
 	public void create() {
-		
-		//initialise date as the current date, for convenience
-		date = LocalDate.now();
 		
 		// load the background image & set internal size
 		bgImage = new Texture(Gdx.files.internal("watrMap.png"));
@@ -76,16 +72,8 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		font.getData().setScale(2f);
 		font.getRegion().getTexture().setFilter(TextureFilter.Linear, TextureFilter.Linear);
 		
-		//set zoom level label location
-		zTextLoc = new Vector3(20, 20, 0);
-		
 		//set stored zoom level
 		zoom = 1f;
-		
-		//slider
-//		date = new Slider(1, MAX_BPM, INC_BPM, false, skin);
-		
-		//
 		
 		// load any sound effects
 		sfxSelect = Gdx.audio.newSound(Gdx.files.internal("select.wav"));
@@ -95,6 +83,18 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		camera.setToOrtho(false, width, height);
 		viewport = new FitViewport(width, height, camera);
 		batch = new SpriteBatch();
+		
+		//set up the settings screen
+		settings = new Settings(this);
+		this.setScreen(settings);
+		settings.hide();
+		//& button, along with it's textures
+		List<Texture> settingsBtnTex = new ArrayList<Texture>();
+		settingsBtnTex.add(new Texture(Gdx.files.internal("settings.png")));
+		settingsBtnTex.add(new Texture(Gdx.files.internal("settingsH.png")));
+		settingsBtnTex.add(new Texture(Gdx.files.internal("settingsC.png")));
+		settingsBtn = new SettingsButton(settingsBtnTex);
+		settingsBtn.setBounds(0, (height/20)*19, width/20, height/20);
 
 		// create & populate the regions array
 		regions = new ArrayList<Region>();
@@ -492,13 +492,12 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		this.blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
-		if(Gdx.graphics.getHeight() > Gdx.graphics.getWidth()) {
-			font.getData().setScale(Gdx.graphics.getHeight() / viewport.getWorldHeight());
-		}
-		else {
-			font.getData().setScale(Gdx.graphics.getWidth() / viewport.getWorldWidth());
-		}
-		zTextLoc = guiPosOnWorld(20, 20);
+//		if(Gdx.graphics.getHeight() > Gdx.graphics.getWidth()) {
+//			font.getData().setScale(Gdx.graphics.getHeight() / viewport.getWorldHeight());
+//		}
+//		else {
+//			font.getData().setScale(Gdx.graphics.getWidth() / viewport.getWorldWidth());
+//		}
 		
 	}
 	
@@ -516,7 +515,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			//check if hitbox contains mouse
 			if(hitboxCheck(i) && !this.regions.get(i).getZoomedInto()) {
 				
-				if(this.regions.get(i).getMouseOver() == false) {
+				if(!this.regions.get(i).getMouseOver()) {
 					this.sfxSelect.play(0.1f);
 					this.regions.get(i).setMouseOver(true);
 					
@@ -529,7 +528,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			}
 			//if not, and if sprite's mouseOver is true, turn off the sprite's mouseover, with an exception for okinawa & kyushu, as okinawa is part of the kyushu region.
 			else if(
-					this.regions.get(i).getMouseOver() == true
+					this.regions.get(i).getMouseOver()
 					&& !(i == 5 && hitboxCheck(6))
 					&& !(i == 6 && hitboxCheck(5))
 					) {
@@ -538,7 +537,40 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 				
 			}
 			
-//			System.out.println(this.regions.get(i).getBoundingRectangle().contains(Gdx.input.getX(), Gdx.input.getY()));
+		}
+		
+		//check if mouse is over/has clicked the settings button, and does a similar thing to the region hitboxes.
+		if(settingsBtn.getBoundingRectangle().contains(mousePosOnWorld().x, mousePosOnWorld().y)) {
+			
+			if(!settingsBtn.getMouseOver()) {
+				
+				this.sfxSelect.play(0.1f);
+				settingsBtn.setMouseOver(true);
+				
+			}
+			
+			if(Gdx.input.isTouched()) {
+				
+				if(!settingsBtn.getMouseDown()) {
+					
+					this.sfxSelect.play(0.1f);
+					settingsBtn.setMouseDown(true);
+					
+				}
+				
+			}
+			else if(settingsBtn.getMouseDown()) {
+				
+				settingsBtn.setMouseDown(false);
+				
+			}
+			
+		}
+		else if(settingsBtn.getMouseOver()) {
+			
+			settingsBtn.setMouseOver(false);
+			settingsBtn.setMouseDown(false);
+			
 		}
 		
 		
@@ -563,8 +595,6 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		
 		batch.draw(bgImage, 0, 0);
 		
-		font.draw(batch, "Zoom level:"+zoom, zTextLoc.x, zTextLoc.y);
-		
 		for (Region region : regions) {
 			region.draw(batch);
 		}
@@ -577,6 +607,17 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 			ts.draw(batch);
 		}
 		
+		//if the settings are visible, render them.
+		if(settings.visible()) {
+			
+			settings.render(Gdx.graphics.getDeltaTime());
+			
+			font.draw(batch, "Zoom level:"+zoom, width/4, (height/20) * 19);
+			
+		}
+		
+		settingsBtn.draw(batch);
+		
 		batch.end();
 	}
 
@@ -584,6 +625,7 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 	public void dispose() {
 		// dispose of all the native resources
 		//TODO: check to see if anything else needs to be disposed properly/differently.
+		
 		for(Region region : regions) {
 			region.getTexture().dispose();
 			region.getHoverTexture().dispose();
@@ -594,26 +636,29 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 		for(TestSite ts : testSites) {
 			ts.getTexture().dispose();
 		}
+		settingsBtn.dispose();
 		font.dispose();
 		sfxSelect.dispose();
+		settings.dispose();
 		batch.dispose();
 	}
 	
 	//Resize the viewport when the window is resized.
 	@Override
 	public void resize(int width, int height) {
+		settings.resize(width, height);
 		viewport.update(width, height);
 		refreshScale();
 	}
 	
 	@Override
 	public void pause() {
-		
+		settings.pause();
 	}
 	
 	@Override
 	public void resume() {
-		
+		settings.resume();
 	}
 
 	@Override
@@ -640,6 +685,17 @@ public class SakuraCast extends ApplicationAdapter implements InputProcessor {
 //			System.out.println(viewport.getWorldHeight());
 //			viewport.setWorldSize(viewport.getWorldWidth() -100, viewport.getWorldHeight() -100);
 //			camera.zoom += 0.5;
+			
+			if(settingsBtn.getBoundingRectangle().contains(mousePosOnWorld().x, mousePosOnWorld().y)) {
+				
+				if(settings.visible()) {
+					settings.hide();
+				}
+				else {
+					settings.show();
+				}
+				
+			}
 			
 			for(int i = 0; i < regions.size(); i++) {
 				
