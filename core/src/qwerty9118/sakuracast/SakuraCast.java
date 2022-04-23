@@ -20,16 +20,19 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.DelaunayTriangulator;
 import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.ShortArray;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class SakuraCast extends Game implements InputProcessor {//ApplicationAdapter implements InputProcessor {
 	public InputMultiplexer inputM;
 	private Texture bgImage;
-	private BitmapFont font;
+	public BitmapFont font;
 	private Sound sfxSelect;
 	public SpriteBatch batch;
 	public Viewport viewport;
@@ -45,14 +48,17 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	private List<List<Integer>> regionPos;
 	private List<Blossom> blossoms;
 	private List<Texture> blossomTex;
-	static List<TestSite> testSites;
+	public static List<TestSite> testSites;
+	private List<List<Integer>> testSiteTriPoints;
+	private List<Polygon> testSiteTris;
 	private TestSite templateSite;
 	private Texture jmaTex;
+	private Texture jmaSelTex;
 	private float width;
 	private float height;
-//	static LocalDate date;
-//	private Slider dateSlider;
-	private float zoom;
+	public float zoom;
+	private ShapeRenderer shaperend;
+	public boolean tsSel;
 
 	@Override
 	public void create() {
@@ -67,6 +73,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		// load the rest of the images for the program
 		jmaTex = new Texture(Gdx.files.internal("jma.png"));
+		jmaSelTex = new Texture(Gdx.files.internal("jmaS.png"));
 		regionLoc = new ArrayList<String>();
 		regionLocS = new ArrayList<String>();
 		blossomTex = new ArrayList<Texture>();
@@ -94,6 +101,17 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		viewport = new FitViewport(width, height, camera);
 		viewportGui = new FitViewport(width, height, cameraGui);
 		batch = new SpriteBatch();
+
+		// create & populate the regions array
+		populateRegions();
+		
+		//create & populate the testSites array (BEFORE blossoms, as blossoms take values from test sites)
+		populateTestSites();
+		
+		//create & populate the blossoms array
+		populateBlossoms();
+		
+		shaperend = new ShapeRenderer();
 		
 		//set up the settings screen
 		settings = new Settings(this);
@@ -106,31 +124,12 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		settingsBtnTex.add(new Texture(Gdx.files.internal("settingsC.png")));
 		settingsBtn = new SettingsButton(settingsBtnTex);
 		settingsBtn.setBounds(0, (height/20)*19, width/20, height/20);
-
-		// create & populate the regions array
-		regions = new ArrayList<Region>();
-//		regionHitboxes = new ArrayList<Rectangle>();
-		regionHitpolys = new ArrayList<Polygon>();
-		regionPos = new ArrayList<List<Integer>>();
-		populateRegions();
-		
-		//create & populate the testSites array (BEFORE blossoms, as blossoms take values from test sites)
-		testSites = new ArrayList<TestSite>();
-		populateTestSites();
-		
-		//create & populate the blossoms array
-		blossoms = new ArrayList<Blossom>();
-		populateBlossoms();
-		
-//		shaperend = new ShapeRenderer();
 		
 		//add this to inputM
 		inputM.addProcessor(this);
 		
 		//set the input processor to the input multiplexer.
 		Gdx.input.setInputProcessor(inputM);
-		
-		
 		
 //		System.out.println(sakuraFront(635));
 		
@@ -159,6 +158,11 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	//this populates the region array with regions.
 	private void populateRegions() {
 		
+		//initialise the relevant arrays.
+		regions = new ArrayList<Region>();
+		regionHitpolys = new ArrayList<Polygon>();
+		regionPos = new ArrayList<List<Integer>>();
+		
 		//create some variables to store values for the loop
 		Region region;
 //		Rectangle rect;
@@ -179,18 +183,17 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		regionPos.add(Arrays.asList(372, 453, 151, 89, -3));//Shikoku
 		regionPos.add(Arrays.asList(800, 655, 140, 241, -12));//Tohoku
 		
-		//add each region's hitpolygon individually.
+		//add each region's hitpolygon individually.751,460
 		//each polygon is made from a list of x-coordinate, y-coordinate pairs.
-		regionHitpolys.add(new Polygon( new float[]{755,373,791,412,714,493,770,582,652,603,606,526,568,545,550,490} ));//Chubu
-		regionHitpolys.add(new Polygon( new float[]{501,501,501,588,332,641,301,595} ));//Chugoku
+		regionHitpolys.add(new Polygon( new float[]{755,373, 770,386, 797,411, 751,460, 717,494, 769,580, 644,604, 600,533, 572,549, 550,490} ));//Chubu
+		regionHitpolys.add(new Polygon( new float[]{427,536, 501,528, 500,587, 332,641,301,595} ));//Chugoku
 		regionHitpolys.add(new Polygon( new float[]{906,46,1124,152,993,227,776,250} ));//Hokkaido
-		regionHitpolys.add(new Polygon( new float[]{508,527,572,550,601,533,667,639,533,673} ));//Kansai
-		regionHitpolys.add(new Polygon( new float[]{757,469,855,485,857,544,798,590,717,494} ));//Kanto
+		regionHitpolys.add(new Polygon( new float[]{501,528, 543,523, 572,549, 600,533, 644,604, 667,639,533,673, 524,618, 500,587} ));//Kansai
+		regionHitpolys.add(new Polygon( new float[]{751,460, 854,483, 857,544,798,590, 769,580, 717,494} ));//Kanto
 		regionHitpolys.add(new Polygon( new float[]{310,624,372,679,332,775,261,764,232,651} ));//Kyushu
 		regionHitpolys.add(new Polygon( new float[]{184,972,141,1039,120,1002} ));//Okinawa
-		regionHitpolys.add(new Polygon( new float[]{508,596,525,636,391,701,369,651} ));//Shikoku
-		regionHitpolys.add(new Polygon( new float[]{792,258,938,243,856,482,761,459,797,411,771,382} ));//Tohoku
-		
+		regionHitpolys.add(new Polygon( new float[]{501,599, 525,636,391,701,369,651} ));//Shikoku
+		regionHitpolys.add(new Polygon( new float[]{792,258,938,243, 921,353, 854,483, 751,460, 797,411, 771,382, 770,386} ));//Tohoku
 		
 		
 		//loop once for each location in regionLoc
@@ -236,8 +239,11 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 	}
 
-	//this adds a ton of blossom sprites.
-	private void populateBlossoms() {
+	//this generates a ton of blossom sprites in the region hitpolygons.
+	public void populateBlossoms() {
+		
+		//create and/or reset blossoms
+		this.blossoms = new ArrayList<Blossom>();
 		
 		Random r = new Random();
 		int cellSize = 16;
@@ -247,7 +253,9 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		Blossom blossom;
 		int xCoord;
 		int yCoord;
-		Vector3 hmm;
+		Vector3 pos;
+		
+		calcSiteTriForSmooth();//uncomment when closestTestSiteSmooth2 is being used.
 		
 		for(int y = 0; y < gridHeight; y++) {
 			
@@ -256,16 +264,17 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 				xCoord = (int) ( ( ( x / width ) * Gdx.graphics.getWidth() ) * cellSize + r.nextInt(cellSize) );
 				yCoord = (int) ( ( ( y / height ) * Gdx.graphics.getHeight() ) * cellSize + r.nextInt(cellSize) );
 				
-				hmm = guiPosOnWorld(xCoord, yCoord);
+				pos = guiPosOnWorld(xCoord, yCoord);
 				
-				if(hitboxCheck((int) hmm.x, (int) hmm.y)) {
+				if(hitboxCheck((int) pos.x, (int) pos.y)) {
 					
-//					hmm = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
+//					pos = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
 					
-					blossom = new Blossom(this.blossomTex, closestTestSite(hmm.x-(texSize/2), hmm.y-(texSize/2)));
-//					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(hmm.x-(texSize/2), hmm.y-(texSize/2)));
+//					blossom = new Blossom(this.blossomTex, closestTestSite(pos.x-(texSize/2), pos.y-(texSize/2)));
+//					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(pos.x-(texSize/2), pos.y-(texSize/2)));
+					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth2(pos.x-(texSize/2), pos.y-(texSize/2)));
 					
-					blossom.setBounds(hmm.x-(texSize/2), hmm.y-(texSize/2), texSize, texSize);
+					blossom.setBounds(pos.x-(texSize/2), pos.y-(texSize/2), texSize, texSize);
 					
 					this.blossoms.add(blossom);
 					
@@ -292,7 +301,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		for(int i = 0; i < testSites.size(); i++) {
 			
-			tempDist = testSites.get(i).getCentre().dst(x, y);
+			tempDist = testSites.get(i).pos().dst(x, y);
 			
 			if(tempDist < dist) {
 				closest = i;
@@ -317,7 +326,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		for(int i = 0; i < testSites.size(); i++) {
 			
-			tempDist = testSites.get(i).getCentre().dst(x, y);
+			tempDist = testSites.get(i).pos().dst(x, y);
 			
 			if(tempDist < dist) {
 				closest = i;
@@ -346,10 +355,141 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 	}
 	
-	private void populateTestSites(){
+	private ArrayList<Double> closestTestSiteSmooth2(float x, float y) {
+		
+		for(int i = 0; i < testSiteTris.size(); i++) {
+			
+			if(testSiteTris.get(i).contains(x, y)) {
+				
+				ArrayList<Double> list = new ArrayList<Double>();
+				list.add(testSiteTriPoints.get(i).get(0).doubleValue());
+				list.add((double) testSites.get( testSiteTriPoints.get(i).get(0) ).pos().dst(x, y));
+				list.add(testSiteTriPoints.get(i).get(1).doubleValue());
+				list.add((double) testSites.get( testSiteTriPoints.get(i).get(1) ).pos().dst(x, y));
+				list.add(testSiteTriPoints.get(i).get(2).doubleValue());
+				list.add((double) testSites.get( testSiteTriPoints.get(i).get(2) ).pos().dst(x, y));
+				
+				return list;
+				
+			}
+			
+		}
+		
+//		float dist = 500;
+//		int index = 0;
+//		for(int i = 0; i < testSites.size(); i++) {
+//			if(testSites.get(i).pos().dst(x,y) < dist) {
+//				dist = testSites.get(i).pos().dst(x,y);
+//				index = i;
+//			}
+//		}
+//		
+//		ArrayList<Double> list = new ArrayList<Double>();
+//		list.add(testSiteTriPoints.get(index).get(0).doubleValue());
+//		list.add((double) testSites.get( testSiteTriPoints.get(index).get(0) ).pos().dst(x, y));
+//		list.add(testSiteTriPoints.get(index).get(1).doubleValue());
+//		list.add((double) testSites.get( testSiteTriPoints.get(index).get(1) ).pos().dst(x, y));
+//		list.add(testSiteTriPoints.get(index).get(2).doubleValue());
+//		list.add((double) testSites.get( testSiteTriPoints.get(index).get(2) ).pos().dst(x, y));
+//		
+//		return list;
+		
+		return closestTestSiteSmooth(x, y);
+		
+	}
+	
+	private void calcSiteTriForSmooth() {
+		
+		System.out.println("Triangulating test sites...");
+		
+		testSiteTriPoints = new ArrayList<List<Integer>>();
+		testSiteTris = new ArrayList<Polygon>();
+		
+		List<Float> coords = new ArrayList<Float>();
+		DelaunayTriangulator delTri = new DelaunayTriangulator();
+		
+//		System.out.println(testSites.get(0).pos());
+		
+		for(TestSite ts : testSites) {
+			
+			coords.add(ts.posX());
+			coords.add(ts.posY());
+			
+		}
+		
+//		System.out.println(coords.get(0));
+		
+		float[] coords2 = new float[coords.size()];
+		for(int i = 0; i < coords.size(); i++) {
+			coords2[i] = coords.get(i);
+		}
+		
+//		System.out.println(coords2[0]);
+		
+		ShortArray triGroups = new ShortArray();
+		triGroups = delTri.computeTriangles(coords2, false);
+		
+//		System.out.println(triGroups.size);
+		
+		short[] triGroups2 = triGroups.toArray();
+		
+//		System.out.println(triGroups2.length);
+		
+		for(int i = 0; i < triGroups2.length; i+=3) {
+			testSiteTriPoints.add(Arrays.asList((int) triGroups2[i], (int) triGroups2[i+1], (int) triGroups2[i+2]));
+			testSiteTris.add(new Polygon(new float[] {
+					testSites.get(triGroups2[i]).posX(),
+					testSites.get(triGroups2[i]).posY(),
+					testSites.get(triGroups2[i+1]).posX(),
+					testSites.get(triGroups2[i+1]).posY(),
+					testSites.get(triGroups2[i+2]).posX(),
+					testSites.get(triGroups2[i+2]).posY()
+			}));
+//			System.out.println(i);
+		}
+		
+//		for(Polygon p : regionHitpolys) {
+//			
+//			for(int i = 0; i < p.getVertices().length; i+=2) {
+//				
+//				if(hitboxCheckTestTris(p.getVertices()[i], height - p.getVertices()[i+1])) {
+//					
+//					TestSite ts = new TestSite();
+//					ts.set(templateSite);//make the new object identical to the template object that is stored globally.
+//					ts.setCenter(p.getVertices()[i], height - p.getVertices()[i+1]);//pass in the coordinates to the new object.
+////					ts.visible(false);
+//					
+//					float dist = 500;
+//					int index = 0;
+//					
+//					for(int j = 0; j < testSites.size(); j++) {
+//						if(testSites.get(j).pos().dst(ts.pos()) < dist) {
+//							dist = testSites.get(j).pos().dst(ts.pos());
+//							index = j;
+//						}
+//					}
+//					
+//					ts.setDs(testSites.get(index).getDs());
+//					ts.setBD(testSites.get(index).getBD());
+//					
+//					testSites.add(ts);
+//					
+////					System.out.println(i);
+//					
+//				}
+//				
+//			}
+//			
+//		}
+		
+	}
+	
+	private void populateTestSites() {
+		
+		testSites = new ArrayList<TestSite>();
 		
 		int texSize = 8;//(int) (16 * zoom);
-		templateSite = new TestSite(jmaTex);
+		templateSite = new TestSite(jmaTex, jmaSelTex);
 		templateSite.setSize(texSize, texSize);
 		
 		//this will be painful to look at, but i'm rapidly running out of time and i need to do this fast, so i'm taking the copy-paste-code route for these coordinates.
@@ -471,7 +611,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		TestSite ts = new TestSite();
 		ts.set(templateSite);//make the new object identical to the template object that is stored globally.
 		ts.setCenter(x,y);//pass in the coordinates to the new object.
-		ts.setTemp(10+new Random().nextDouble()*10);//give it a random temperature.
+//		ts.setTemp(10+new Random().nextDouble()*10);//give it a random temperature.
 		
 		//values are from Sendai from the pdf that I'm using as a main source.
 		//this is temporary.
@@ -513,23 +653,44 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 //		y = (int) (Gdx.graphics.getHeight() - (y*((float) Gdx.graphics.getHeight() / height)));
 		
 		for(int i = 0; i < this.regionHitpolys.size(); i++) {
-
-//			if(this.regionHitboxes.get(i).contains(x, y)) {
+			
+			if(this.regionHitpolys.get(i).contains(//x,y
+					getX(x),
+					getY(y)
+					)) {
 				
-				if(this.regionHitpolys.get(i).contains(//x,y
-						getX(x),
-						getY(y)
-						)) {
-					
-					return true;
-					
-				}
+				return true;
 				
-//			}
+			}
 			
 		}
 		
 		return false;
+		
+	}
+	
+	private boolean hitboxCheckTestTris(float x, float y) {//checks all hitboxes for [x,y] world coordinates.
+		
+//		System.out.println(f+","+g);
+		
+		System.out.println(testSiteTris.size());
+		
+		for(int i = 0; i < this.testSiteTris.size(); i++) {
+			
+			if(this.testSiteTris.get(i).contains(//x,y
+					getX(x),
+					getY(y)
+					)) {
+				
+//				System.out.println(i);
+				
+				return false;
+				
+			}
+			
+		}
+		
+		return true;
 		
 	}
 	
@@ -548,9 +709,30 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		return viewport.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
 	}
 	
+	//translates the mouse position on the window into the position where it appears that it is in the world.
+	private Vector3 mousePosOnGui() {
+		return viewportGui.unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+	}
+	
 	//translates a position on the window into the position where it appears that it is in the world.
 	public Vector3 guiPosOnWorld(float x, float y) {
 		return camera.unproject(new Vector3(x, y, 0));
+	}
+	
+	public boolean testSiteCheckSelected() {
+		
+		for(TestSite ts : testSites) {
+			
+			if(ts.selected()) {
+				
+				return true;
+				
+			}
+			
+		}
+		
+		return false;
+		
 	}
 	
 	//refresh anything that needs to be after scaling the window.
@@ -564,10 +746,9 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		}
 		
 		//this bit is pretty much the same as the initial creation of test sites and blossoms.
-		this.testSites = new ArrayList<TestSite>();
-		populateTestSites();
+//		this.testSites = new ArrayList<TestSite>();
+//		populateTestSites();
 		
-		this.blossoms = new ArrayList<Blossom>();
 		populateBlossoms();
 		
 	}
@@ -611,7 +792,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		}
 		
 		//check if mouse is over/has clicked the settings button, and does a similar thing to the region hitboxes.
-		if(settingsBtn.getBoundingRectangle().contains(mousePosOnWorld().x, mousePosOnWorld().y)) {
+		if(settingsBtn.getBoundingRectangle().contains(mousePosOnGui().x, mousePosOnGui().y)) {
 			
 			if(!settingsBtn.getMouseOver()) {
 				
@@ -650,6 +831,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		// blue and alpha component in the range [0,1]
 		// of the color to be used to clear the screen.
 		ScreenUtils.clear(0, 0, 0.2f, 1);
+		ScreenUtils.clear(Color.valueOf("243e6e"));
 
 		// tell the camera to update its matrices.
 		camera.update();
@@ -658,8 +840,6 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		// coordinate system specified by the camera.
 		batch.setProjectionMatrix(camera.combined);
 		viewport.apply();
-		
-//		shaperend.setProjectionMatrix(camera.combined);
 		
 		
 		// begin a new batch and draw everything.
@@ -676,25 +856,58 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		}
 		
 		for (TestSite ts : testSites) {
-			ts.draw(batch);
+//			if(ts.isVisible()) {
+				ts.draw(batch);
+//			}
 		}
 		
+		//set up stuff for the settings rendering
+		batch.setProjectionMatrix(cameraGui.combined);
+		viewportGui.apply(true);
+		
+		//render the settings button
 		settingsBtn.draw(batch);
 		
+		//call for the settings to render themselves
+		settings.render(Gdx.graphics.getDeltaTime());
+
 		//if the settings are visible, render them.
+		//(settings.render handles itself)
 		if(settings.visible()) {
-			
-			batch.setProjectionMatrix(cameraGui.combined);
-			viewportGui.apply(true);
-			
-			settings.render(Gdx.graphics.getDeltaTime());
 			
 			font.draw(batch, "Zoom level: "+zoom, width/40, (height/40) * 37);
 			font.draw(batch, "Date: "+Settings.date.toString(), width/40, (height/40) * 36);
+			font.draw(batch, "Cursor position: ["+(int) mousePosOnWorld().x+", "+(int) mousePosOnWorld().y+"]", width/40, (height/40) * 35);
 			
 		}
 		
 		batch.end();
+		
+		
+		shaperend.setAutoShapeType(true);
+		shaperend.begin();
+		
+		java.awt.Color clr;
+		
+		shaperend.setProjectionMatrix(camera.combined);
+		
+		if(settings.tris) {
+			
+			for(int i = 0; i < testSiteTris.size(); i++) {
+				
+				clr = java.awt.Color.getHSBColor((float) i/testSiteTris.size(), 1, 1);
+				
+				shaperend.setColor((float) clr.getRed()/255, (float) clr.getGreen()/255, (float) clr.getBlue()/255, 1f);
+				
+				shaperend.polygon(testSiteTris.get(i).getVertices());
+				
+			}
+			
+		}
+		
+		shaperend.end();
+		
+		
 	}
 
 	@Override
@@ -757,13 +970,14 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-//		System.out.println(camera.zoom);
+		
 		if(button == Input.Buttons.LEFT) {
 //			System.out.println(viewport.getWorldHeight());
 //			viewport.setWorldSize(viewport.getWorldWidth() -100, viewport.getWorldHeight() -100);
 //			camera.zoom += 0.5;
 			
-			if(settingsBtn.getBoundingRectangle().contains(mousePosOnWorld().x, mousePosOnWorld().y)) {
+			
+			if(settingsBtn.getBoundingRectangle().contains(mousePosOnGui().x, mousePosOnGui().y)) {
 				
 				if(settings.visible()) {
 					settings.hide();
@@ -774,47 +988,84 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 				
 			}
 			
-			for(int i = 0; i < regions.size(); i++) {
+			if(/*!testSiteCheckSelected() &&*/ zoom != 1) {
 				
-				if(hitboxCheck(i) && !this.regions.get(i).getZoomedInto()) {
+				for(int i = 0; i < testSites.size(); i++) {
 					
-					camera.position.x = regions.get(i).getMidX();
-					camera.position.y = regions.get(i).getMidY();
-					
-					if( (regions.get(i).getWidth()/viewport.getWorldWidth()) > (regions.get(i).getHeight()/viewport.getWorldHeight()) ) {
-						camera.zoom = (regions.get(i).getWidth() + 20)/viewport.getWorldWidth();
-					}
-					else {
-						camera.zoom = (regions.get(i).getHeight() + 20)/viewport.getWorldHeight();
-					}
-					
-					zoom = camera.zoom;
-					
-					//tell the regions they aren't zoomed into.
-					for(Region r : regions) {
-						r.setZoomedInto(false);
+					if(testSites.get(i).getBoundingRectangle().contains(mousePosOnWorld().x, mousePosOnWorld().y)) {
+						
+						testSites.get(settings.getSelSite()).select(false);
+						
+						testSites.get(i).select(true);
+						tsSel = true;
+						settings.selectedSite(i);
+						
 					}
 					
-					//tell the current region that actually it is zoomed into.
-					regions.get(i).setZoomedInto(true);
+				}
+				
+			}
+			
+			if(!tsSel) {
+				
+				for(int i = 0; i < regions.size(); i++) {
 					
-					//special magic that lets everything render correctly.
-					viewport.apply();
-					viewportGui.apply();
-					refreshScale();
-					
-					break;
+					if(hitboxCheck(i) && !this.regions.get(i).getZoomedInto()) {
+						
+						camera.position.x = regions.get(i).getMidX();
+						camera.position.y = regions.get(i).getMidY();
+						
+						if( (regions.get(i).getWidth()/viewport.getWorldWidth()) > (regions.get(i).getHeight()/viewport.getWorldHeight()) ) {
+							camera.zoom = (regions.get(i).getWidth() + 20)/viewport.getWorldWidth();
+						}
+						else {
+							camera.zoom = (regions.get(i).getHeight() + 20)/viewport.getWorldHeight();
+						}
+						
+						zoom = camera.zoom;
+						
+						//tell the regions they aren't zoomed into.
+						for(Region r : regions) {
+							r.setZoomedInto(false);
+						}
+						
+						//tell the current region that actually it is zoomed into.
+						regions.get(i).setZoomedInto(true);
+						
+						//special magic that lets everything render correctly.
+						viewport.apply();
+						viewportGui.apply();
+						refreshScale();
+						
+						break;
+						
+					}
 					
 				}
 				
 			}
 			
 			return true;
+			
 		}
 		
 		if(button == Input.Buttons.RIGHT) {
 			
-			if(zoom != 1) {
+			boolean tsDesel = false;
+			
+			//check for selected test sites & deselect them
+			for(TestSite ts : testSites) {
+				
+				if(ts.selected()) {
+					ts.select(false);
+					tsDesel = true;
+				}
+				
+				tsSel = false;
+				
+			}
+			
+			if(zoom != 1 && !tsDesel) {
 				
 				camera.position.x = viewport.getWorldWidth() / 2;
 				camera.position.y = viewport.getWorldHeight() / 2;

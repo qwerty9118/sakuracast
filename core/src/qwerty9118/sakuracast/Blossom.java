@@ -39,16 +39,16 @@ public class Blossom extends Sprite {
 		this.closestSite = closestSite.get(0).intValue();
 		
 		this.Ds = LocalDate.ofYearDay(2022, (int) (
-				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(1)
-				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(3)
-				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * closestSite.get(5))
-				/ (closestSite.get(1) + closestSite.get(3) + closestSite.get(5))));
+				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(1))
+				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(3))
+				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getDs().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(5)))
+				/ (1/closestSite.get(1) + 1/closestSite.get(3) + 1/closestSite.get(5))));
 		
 		this.BD = LocalDate.ofYearDay(2022, (int) (
-				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(1)
-				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(3)
-				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * closestSite.get(5))
-				/ (closestSite.get(1) + closestSite.get(3) + closestSite.get(5))));
+				(SakuraCast.testSites.get(closestSite.get(0).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(1))
+				+SakuraCast.testSites.get(closestSite.get(2).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(3))
+				+SakuraCast.testSites.get(closestSite.get(4).intValue()).getBD().plusDays(dateVariance).getDayOfYear() * (1/closestSite.get(5)))
+				/ (1/closestSite.get(1) + 1/closestSite.get(3) + 1/closestSite.get(5))));
 		
 	}
 	
