@@ -255,21 +255,29 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		int yCoord;
 		Vector3 pos;
 		
-		calcSiteTriForSmooth();//uncomment when closestTestSiteSmooth2 is being used.
+		//this creates a bunch of triangles that are made from the midpoints
+		//of all the test sites so that the blossoms can check the corners of
+		//the triangles and get a gradient out of them.
+		calcSiteTriForSmooth();//uncomment when closestTestSiteSmooth or closestTestSiteSmooth2 are being used.
 		
+		//loop through a grid to evenly distribute the blossoms
 		for(int y = 0; y < gridHeight; y++) {
 			
 			for(int x = 0; x < gridWidth; x++) {
 				
+				//get the coordinates from the grid cell we are currently on (corrected to actual coordinates) plus
+				//a random value to make everything look nicer.
 				xCoord = (int) ( ( ( x / width ) * Gdx.graphics.getWidth() ) * cellSize + r.nextInt(cellSize) );
 				yCoord = (int) ( ( ( y / height ) * Gdx.graphics.getHeight() ) * cellSize + r.nextInt(cellSize) );
 				
 				pos = guiPosOnWorld(xCoord, yCoord);
 				
+				//check if the coordinates are inside any of the hitpolygons of the regions.
 				if(hitboxCheck((int) pos.x, (int) pos.y)) {
 					
 //					pos = guiPosOnWorld(xCoord-(texSize/2), yCoord-(texSize/2));
 					
+					//create a new blossom & pass in it's textures and closest point/s
 //					blossom = new Blossom(this.blossomTex, closestTestSite(pos.x-(texSize/2), pos.y-(texSize/2)));
 //					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth(pos.x-(texSize/2), pos.y-(texSize/2)));
 					blossom = new Blossom(this.blossomTex, closestTestSiteSmooth2(pos.x-(texSize/2), pos.y-(texSize/2)));
@@ -293,6 +301,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		Collections.sort(this.regionLoc);
 	}
 	
+	//returns the index of the closest test site to the given coordinates.
 	private int closestTestSite(float x, float y) {
 		
 		int closest = 0;
@@ -314,6 +323,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 	}
 	
+	//returns the indexes of the three closest test sites to the given coordinates.
 	private ArrayList<Double> closestTestSiteSmooth(float x, float y) {
 		
 		double closest = 0;
@@ -324,25 +334,36 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		double dist3 = 500;
 		double tempDist;
 		
+		//loop through all test sites and store the three closest values & their indexes.
 		for(int i = 0; i < testSites.size(); i++) {
 			
 			tempDist = testSites.get(i).pos().dst(x, y);
 			
 			if(tempDist < dist) {
+				closest3 = closest2;
+				closest2 = closest;
 				closest = i;
+				
+				dist3 = dist2;
+				dist2 = dist;
 				dist = tempDist;
 			}
 			else if(tempDist < dist2) {
+				closest3 = closest2;
 				closest2 = i;
+				
+				dist3 = dist2;
 				dist2 = tempDist;
 			}
 			else if(tempDist < dist3) {
 				closest3 = i;
+				
 				dist3 = tempDist;
 			}
 			
 		}
 		
+		//add all those stored values to an array.
 		ArrayList<Double> list = new ArrayList<Double>();
 		list.add(closest);
 		list.add(dist);
@@ -355,6 +376,8 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 	}
 	
+	//returns the indexes of the test sites that make up the points of the triangle that the given coordinates are in,
+	//unless the given coordinates are not in any of the triangles, in which case it falls back on closestTestSiteSmooth.
 	private ArrayList<Double> closestTestSiteSmooth2(float x, float y) {
 		
 		for(int i = 0; i < testSiteTris.size(); i++) {
@@ -408,8 +431,6 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		List<Float> coords = new ArrayList<Float>();
 		DelaunayTriangulator delTri = new DelaunayTriangulator();
 		
-//		System.out.println(testSites.get(0).pos());
-		
 		for(TestSite ts : testSites) {
 			
 			coords.add(ts.posX());
@@ -417,23 +438,15 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 			
 		}
 		
-//		System.out.println(coords.get(0));
-		
 		float[] coords2 = new float[coords.size()];
 		for(int i = 0; i < coords.size(); i++) {
 			coords2[i] = coords.get(i);
 		}
 		
-//		System.out.println(coords2[0]);
-		
 		ShortArray triGroups = new ShortArray();
 		triGroups = delTri.computeTriangles(coords2, false);
 		
-//		System.out.println(triGroups.size);
-		
 		short[] triGroups2 = triGroups.toArray();
-		
-//		System.out.println(triGroups2.length);
 		
 		for(int i = 0; i < triGroups2.length; i+=3) {
 			testSiteTriPoints.add(Arrays.asList((int) triGroups2[i], (int) triGroups2[i+1], (int) triGroups2[i+2]));
@@ -976,6 +989,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 //			viewport.setWorldSize(viewport.getWorldWidth() -100, viewport.getWorldHeight() -100);
 //			camera.zoom += 0.5;
 			
+			boolean overSettings = false;
 			
 			if(settingsBtn.getBoundingRectangle().contains(mousePosOnGui().x, mousePosOnGui().y)) {
 				
@@ -986,9 +1000,11 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 					settings.show();
 				}
 				
+				overSettings = true;
+				
 			}
 			
-			if(/*!testSiteCheckSelected() &&*/ zoom != 1) {
+			if(/*!testSiteCheckSelected() &&*/ zoom != 1 && !overSettings) {
 				
 				for(int i = 0; i < testSites.size(); i++) {
 					
@@ -1006,7 +1022,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 				
 			}
 			
-			if(!tsSel) {
+			if(!tsSel && !overSettings) {
 				
 				for(int i = 0; i < regions.size(); i++) {
 					
