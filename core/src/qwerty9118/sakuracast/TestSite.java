@@ -75,8 +75,8 @@ public class TestSite extends Sprite {
 	
 	
 	//Getter for temperature
-	public double getTemp() {
-		return this.temp;
+	public float getTemp() {
+		return (float) (this.temp - 273.15);
 	}
 	//Setter for temperature
 	public void setTemp(double temp) {

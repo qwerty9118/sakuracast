@@ -173,7 +173,9 @@ public class Settings implements Screen {
 					try {
 						
 						//attempt to set the max DTS of the currently selected site to the value of this text field.
-						sk.testSites.get(selectedSite).setMaxDTS(Double.valueOf(editBD.getText()));
+						sk.testSites.get(selectedSite).setMaxDTS(Double.valueOf(editMaxDTS.getText()));
+						
+						selectedSite(getSelSite());
 						
 						//refresh the blossoms to update the gradients & stuff.
 						sk.populateBlossoms();
