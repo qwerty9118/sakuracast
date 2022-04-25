@@ -765,12 +765,6 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		populateBlossoms();
 		
 	}
-	
-	public double sakuraFront(float temp) {
-		
-		return Math.exp( 9500 * ( ( temp - 288.2 ) / ( 288.2 * temp ) ) );
-		
-	}
 
 	@Override
 	public void render() {
@@ -1076,6 +1070,8 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 					ts.select(false);
 					tsDesel = true;
 				}
+				
+				settings.siteDesel();
 				
 				tsSel = false;
 				

@@ -21,8 +21,9 @@ public class TestSite extends Sprite {
 	private boolean visible;
 	private LocalDate Ds;
 	private LocalDate BD;
-	//temp in degrees celcius
-	private double temp = 15;
+	private double temp;//temp. in kelvin
+	private double maxDTS;
+	private double DTS;
 	
 	public TestSite() {
 		
@@ -33,6 +34,8 @@ public class TestSite extends Sprite {
 //		this.Ds = ;
 //		this.BD = ;
 		this.visible = true;
+		this.temp = 288.2;
+		this.DTS = sakuraFront(this.temp);
 		
 	}
 	
@@ -46,6 +49,14 @@ public class TestSite extends Sprite {
 //		this.Ds = ;
 //		this.BD = ;
 		this.visible = true;
+		this.temp = 288.2;
+		this.DTS = sakuraFront(this.temp);
+		
+	}
+	
+	public double sakuraFront(double temp2) {
+		
+		return Math.exp( 9500 * ( ( temp2 - 288.2 ) / ( 288.2 * temp2 ) ) );
 		
 	}
 	
@@ -67,10 +78,16 @@ public class TestSite extends Sprite {
 	public double getTemp() {
 		return this.temp;
 	}
-
 	//Setter for temperature
 	public void setTemp(double temp) {
-		this.temp = temp;
+		
+		this.temp = temp + 273.15;
+		
+		this.DTS = sakuraFront(this.temp);
+		
+		//get maxDTS to refresh because DTS has changed.
+		setMaxDTS(this.maxDTS);
+		
 	}
 	
 	
@@ -79,10 +96,13 @@ public class TestSite extends Sprite {
 	public LocalDate getDs() {
 		return this.Ds;
 	}
-
 	//Setter for starting date
 	public void setDs(LocalDate Ds) {
+		
 		this.Ds = Ds;
+		
+		setMaxDTS(this.maxDTS);
+		
 	}
 	
 	
@@ -93,7 +113,20 @@ public class TestSite extends Sprite {
 	}
 	//Setter for bloom date
 	public void setBD(LocalDate BD) {
+		
 		this.BD = BD;
+		
+		LocalDate difference;
+		
+		if(this.BD.isAfter(this.Ds)) {
+			difference = this.BD.minusYears(this.Ds.getYear()).minusDays(this.Ds.getDayOfYear());
+		}
+		else {
+			difference = this.Ds.minusYears(this.BD.getYear()).minusDays(this.BD.getDayOfYear());
+		}
+		
+		this.maxDTS = this.DTS * difference.getDayOfYear();
+		
 	}
 	
 //	//Getter for bloom date of year j
@@ -104,6 +137,30 @@ public class TestSite extends Sprite {
 //	public void setBD(int j, LocalDate BD) {
 //		this.BDj = BDj;
 //	}
+	
+	
+	
+	//Getter for max. DTS
+	public double getMaxDTS() {
+		return this.maxDTS;
+	}
+	//Setter for max. DTS
+	public void setMaxDTS(double maxDTS) {
+		
+		this.maxDTS = maxDTS;
+		
+		float i = 0;
+		int j = 0;
+		
+		for(; i < this.maxDTS; i += this.DTS, j++) {}
+		
+		if(Math.abs( this.maxDTS - i ) > Math.abs( this.maxDTS - i+this.DTS )) {
+			j++;
+		}
+		
+		this.BD = this.Ds.plusDays(j);
+		
+	}
 	
 	
 	
