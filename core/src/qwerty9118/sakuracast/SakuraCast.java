@@ -67,13 +67,13 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		inputM = new InputMultiplexer();
 		
 		// load the background image & set internal size
-		bgImage = new Texture(Gdx.files.internal("watrMap.png"));
+		bgImage = new Texture("watrMap.png");
 		width = bgImage.getWidth();
 		height = bgImage.getHeight();
 		
 		// load the rest of the images for the program
-		jmaTex = new Texture(Gdx.files.internal("jma.png"));
-		jmaSelTex = new Texture(Gdx.files.internal("jmaS.png"));
+		jmaTex = new Texture("jma.png");
+		jmaSelTex = new Texture("jmaS.png");
 		regionLoc = new ArrayList<String>();
 		regionLocS = new ArrayList<String>();
 		blossomTex = new ArrayList<Texture>();
@@ -91,7 +91,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		
 		// load any sound effects
 		sfxSelect = Gdx.audio.newSound(Gdx.files.internal("select.wav"));
-
+		
 		// create the cameras, the viewports, and the SpriteBatch
 		// (there's multiple cameras & viewports so that I can do the settings menu GUI)
 		camera = new OrthographicCamera();
@@ -101,7 +101,7 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 		viewport = new FitViewport(width, height, camera);
 		viewportGui = new FitViewport(width, height, cameraGui);
 		batch = new SpriteBatch();
-
+		
 		// create & populate the regions array
 		populateRegions();
 		
@@ -138,20 +138,41 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	//this populates the region texture array with textures.
 	private void populateRegionTex() {
 		
-		//loop through all files ("FileHandle"s) in the "regions" folder.
-		for(FileHandle f : Gdx.files.internal("regions/").list()) {
-			//if it's a 
-			if(f.toString().endsWith("S.png")) {
-				this.regionLocS.add(f.toString());
-			}
-			else {
-				this.regionLoc.add(f.toString());
-			}
-		}
+//		//loop through all files ("FileHandle"s) in the "regions" folder.
+//		for(FileHandle f : Gdx.files.internal("regions/").list()) {
+//			//if it's a 
+//			if(f.toString().endsWith("S.png")) {
+//				this.regionLocS.add(f.toString());
+//			}
+//			else {
+//				this.regionLoc.add(f.toString());
+//			}
+//		}
+//		
+//		//Sort the lists.
+//		Collections.sort(this.regionLoc);
+//		Collections.sort(this.regionLocS);
 		
-		//Sort the lists.
-		Collections.sort(this.regionLoc);
-		Collections.sort(this.regionLocS);
+		//resorting to adding textures manually, to avoid a bug with building the project that I can't be asked to fix.
+		this.regionLoc.add("regions/chubu.png");
+		this.regionLoc.add("regions/chugoku.png");
+		this.regionLoc.add("regions/hokkaido.png");
+		this.regionLoc.add("regions/kansai.png");
+		this.regionLoc.add("regions/kanto.png");
+		this.regionLoc.add("regions/kyushu.png");
+		this.regionLoc.add("regions/okinawa.png");
+		this.regionLoc.add("regions/shikoku.png");
+		this.regionLoc.add("regions/tohoku.png");
+		
+		this.regionLocS.add("regions/chubuS.png");
+		this.regionLocS.add("regions/chugokuS.png");
+		this.regionLocS.add("regions/hokkaidoS.png");
+		this.regionLocS.add("regions/kansaiS.png");
+		this.regionLocS.add("regions/kantoS.png");
+		this.regionLocS.add("regions/kyushuS.png");
+		this.regionLocS.add("regions/okinawaS.png");
+		this.regionLocS.add("regions/shikokuS.png");
+		this.regionLocS.add("regions/tohokuS.png");
 		
 	}
 
@@ -219,23 +240,36 @@ public class SakuraCast extends Game implements InputProcessor {//ApplicationAda
 	//this populates the blossom texture array with textures.
 	private void populateBlossomTex() {
 		
-		List<String> blossomLoc = new ArrayList<String>();
+//		List<String> blossomLoc = new ArrayList<String>();
+//		
+//		//loop through all files ("FileHandle"s) in the "regions" folder.
+//		for(FileHandle f : Gdx.files.internal("blossom/").list()) {
+//			blossomLoc.add(f.toString());
+//		}
+//		
+//		//Sort the list.
+//		Collections.sort(blossomLoc);
+//		
+//		System.out.println(blossomLoc.size());
+//		
+//		//loops through those file handles and adds the textures at those locations to blossomTex.
+//		for(int i = 0; i < blossomLoc.size(); i++) {
+//			
+////			System.out.println(blossomLoc.get(i));
+//			this.blossomTex.add(new Texture(blossomLoc.get(i)));
+//			
+//		}
 		
-		//loop through all files ("FileHandle"s) in the "regions" folder.
-		for(FileHandle f : Gdx.files.internal("blossom/").list()) {
-			blossomLoc.add(f.toString());
-		}
-		
-		//Sort the list.
-		Collections.sort(blossomLoc);
-		
-		//loops through those file handles and adds the textures at those locations to blossomTex.
-		for(int i = 0; i < blossomLoc.size(); i++) {
-			
-//			System.out.println(blossomLoc.get(i));
-			this.blossomTex.add(new Texture(blossomLoc.get(i)));
-			
-		}
+		//resorting to adding textures manually, to avoid a bug with building the project that I can't be asked to fix.
+		this.blossomTex.add(new Texture("blossom/blossom0.png"));
+		this.blossomTex.add(new Texture("blossom/blossom1.png"));
+		this.blossomTex.add(new Texture("blossom/blossom2.png"));
+		this.blossomTex.add(new Texture("blossom/blossom3.png"));
+		this.blossomTex.add(new Texture("blossom/blossom4.png"));
+		this.blossomTex.add(new Texture("blossom/blossom5.png"));
+		this.blossomTex.add(new Texture("blossom/blossom6.png"));
+		this.blossomTex.add(new Texture("blossom/blossom7.png"));
+		this.blossomTex.add(new Texture("blossom/blossom8.png"));
 		
 	}
 
